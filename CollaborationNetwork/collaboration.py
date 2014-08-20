@@ -18,90 +18,6 @@ import csv
 def get_wiki_category(skill):
     return skill 
 
-def group_skills(skill_dic):
-    for sk in skill_dic:
-        category_list = get_wiki_category(sk)
-
-def build_skills_graph(skills, unique_skills):
-
-    G=nx.Graph()
-
-    print "Building graph edges"
-    skill_list = unique_skills.keys()
-
-    d2_dict = defaultdict(dict)    
-
-    for sk in skills:
-        for a in range(0,len(sk)):
-            for b in range(a+1,len(sk)):
-	        try:
-		    d2_dict[sk[a]][sk[b]] += 1.0
-		except:
-		    try:
-		        d2_dict[sk[b]][sk[a]] += 1.0
-		    except:
-		        d2_dict[sk[a]][sk[b]] = 1.0
-
-    for i in range(1, len(skill_list)):
-        for j in range(1,len(skill_list)):
-            if i==j:
-                continue
-	    try:
-		common = d2_dict[skill_list[i]][skill_list[j]]
-		union = unique_skills[skill_list[i]] + unique_skills[skill_list[j]] - common
-	        if union > 10 and common > 1:
-                    jaccard = common/union
-	        else:
-		    jaccard = 0.0
-	        if (jaccard >= 0.1):
-	            G.add_edge(skill_list[i],skill_list[j],weight=jaccard)
-	            print "Added link between ", skill_list[i], skill_list[j], jaccard, common, union
-		    
-            except:
-		continue
-
-    '''	   
-    for i in range(1, len(skill_list)):
-        for j in range(i+1,len(skill_list)):
-	    common = 0.0
-            union = 0.0 
-	    for sk in skills:
-		if skill_list[i] in sk and skill_list[j] in sk:
-		    common += 1
-		if skill_list[i] in sk or skill_list[j] in sk:
-		    union += 1
-	    if union > 10:
-                jaccard = common/union
-	    else:
-		jaccard = 0.0
-	    if (jaccard > 0.01):
-	        #d2_dict[skill_list[i]][skill_list[j]] = jaccard
-	        G.add_edge(skill_list[i],skill_list[j],weight=jaccard)
-	        print "Added link between ", skill_list[i], skill_list[j], jaccard,common, union
-    '''
-
-    elarge=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] >0.4]
-    emedium=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] <0.4 and d['weight'] >0.2]
-    esmall=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] <=0.2]
-
-    pos=nx.spring_layout(G) # positions for all nodes
-    print "Drawing nodes..."
-
-    # nodes
-    nx.draw_networkx_nodes(G,pos,node_size=10)
-
-    # edges
-    nx.draw_networkx_edges(G,pos,edgelist=elarge,width=6)
-    nx.draw_networkx_edges(G,pos,edgelist=emedium,width=4,alpha=0.5,edge_color='g')
-    nx.draw_networkx_edges(G,pos,edgelist=esmall,width=1,alpha=0.5,edge_color='b',style='dashed')
-
-    # labels
-    #nx.draw_networkx_labels(G,pos,font_size=5,font_family='sans-serif')
-
-    plt.axis('off')
-    #plt.savefig("weighted_graph.png") # save as png
-    plt.show() # display
-
 def processSkills(skills):
     skillList=[]
     for s in skills:
@@ -117,14 +33,9 @@ def processSkills(skills):
         s = s.lower().strip()
         for k in s.split(","):
             skillList.append(k)
-    #print "Original skills list ", skillList
-    #for t in skillList:
-    #    print (t.lower().strip())
     return skillList
     
 def handle_disambiguation(name, excep):
-    #print excep.options()
-    #print wikipedia.summary(excep.options[0])
     urls = search(name)
     while True:
         try:
@@ -219,22 +130,19 @@ def remove_misspell_synonyms(skills, synonym):
 def extractRecFromJson(dataset):
 
     data = json.load(dataset) 
-    #num_users = len(data.keys())
-    #colnames = [re.sub(" ", "_",x).lower() for x in data[data.keys()[0]].keys()]
-    #print colnames
 
     user = csv.writer(open("users.csv", "wb"))
     for entry in data.items():
         tline = [ entry[0], (entry[1]['Gender']).lower(), (entry[1]['Employment']).lower(), (entry[1]['Highest Education']).lower(), entry[1]['Last Access Time'], (entry[1]['Location']).lower(), entry[1]['Num Logins'], entry[1]['Year of Birth']  ]
-	print tline
+	#print tline
 	user.writerow(tline)
 
 
     ids = []
     askills = []
     dskills = []
-    ask = csv.writer(open("skills_acq.csv", "wb")) 
-    dsk = csv.writer(open("skills_des.csv", "wb")) 
+    ask = csv.writer(open("data/skills_acq.csv", "wb")) 
+    dsk = csv.writer(open("data/skills_des.csv", "wb")) 
     for entry in data.items():
         ids.append(entry[0]) 
         askills.append(processSkills(entry[1]['Acquired Skills']))
@@ -242,18 +150,26 @@ def extractRecFromJson(dataset):
 
     wikipedia.set_lang("en")
     try:
-        synonym = pickle.load(open( "synonyms.p", "rb" ) )
+        synonym = pickle.load(open( "data/synonyms.p", "rb" ) )
     except:
         print "no synonym.p file, building synonyms from scratch..."
 	synonym = {}
     askills, synonym, unique_askills = remove_misspell_synonyms(askills, synonym)
     dskills, synonym, unique_dskills = remove_misspell_synonyms(dskills, synonym)
     print "Writing back synonyms file"
-    pickle.dump( synonym, open( "synonyms.p", "wb" ) )
+    pickle.dump( synonym, open( "data/synonyms.p", "wb" ) )
 
-    for sk in askills:
-	
-     
+    for i,sk in enumerate(askills):
+        for s in sk:
+            tline = [ids[i], s]
+	    print tline     
+	    ask.writerow(tline) 
+
+    for i,sk in enumerate(dskills):
+        for s in sk:
+            tline = [ids[i], s]
+	    print tline     
+	    ask.writerow(tline) 
 
     return ids,askills,dskills,gender,location,employment   
 

@@ -169,7 +169,7 @@ def extractRecFromJson(dataset):
         NEED_ID char(64) NOT NULL,\
         TIME_COMM DATETIME NOT NULL,\
         FOREIGN KEY(USR_ID) REFERENCES USERS(USR_ID) )")
-    cur.execute("CREATE TABLE REQ_JOIN_NEEDS (\
+    cur.execute("CREATE TABLE REQ_JOIN_NEED (\
         USR_ID char(64) NOT NULL,\
 	NEED_ID  char(64) NOT NULL,\
 	CRS_PRJ_ID char(64) NOT NULL,\
@@ -308,7 +308,7 @@ def extractRecFromJson(dataset):
 	    if i not in unique_entry:
 	        unique_entry.append(i)
                 #print entry[0], r['need'], r['course_project'], r['num_votes'], r['rescinded'], time
-                cur.execute('''INSERT INTO REQ_JOIN_NEEDS VALUES(?,?,?,?,?,?)''', (entry[0], r['need'], r['course_project'], r['num_votes'], r['rescinded'], time  ) )
+                cur.execute('''INSERT INTO REQ_JOIN_NEED VALUES(?,?,?,?,?,?)''', (entry[0], r['need'], r['course_project'], r['num_votes'], r['rescinded'], time  ) )
 
     for entry in data.items():
         req = entry[1]['Need Joins']
@@ -364,7 +364,7 @@ def extractRecFromJson(dataset):
 	            start_time = "NULL"
 	        else:
 	            start_time = stime[0]
-		print r['id'], last_time, entry[0], r['last_updated_user'], r['need'], r['post_count'], r['view_count'], start_time
+		#print r['id'], last_time, entry[0], r['last_updated_user'], r['need'], r['post_count'], r['view_count'], start_time
 		cur.execute('''INSERT INTO THREADS VALUES(?,?,?,?,?,?,?,?)''', (r['id'], last_time, entry[0], r['last_updated_user'], r['need'], r['post_count'], r['view_count'], start_time ) )
 
 

@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+'''
+Author : Dhruv Choudhary
+https://github.com/choudharydhruv/Coursolve
+SQL file genrating script for understanding Collaboration in a MOOC
+'''
 import json
 import sys
 import google
@@ -131,7 +136,7 @@ def extractRecFromJson(dataset):
 
     data = json.load(dataset) 
 
-    con = lite.connect('test.db')
+    con = lite.connect('collaboration.db')
 
     cur = con.cursor()
 

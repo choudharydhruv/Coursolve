@@ -240,7 +240,7 @@ def extractRecFromJson(dataset):
     wikipedia.set_lang("en")
 
     try:
-        synonym = pickle.load(open( "synonyms.p", "rb" ) )
+        synonym = pickle.load(open( "data/synonyms.p", "rb" ) )
     except:
         print "no synonym.p file, building synonyms from scratch..."
 	synonym = {}

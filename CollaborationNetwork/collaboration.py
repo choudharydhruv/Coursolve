@@ -13,7 +13,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import csv
-
+import sqlite3 as lite
 
 def get_wiki_category(skill):
     return skill 
@@ -131,12 +131,11 @@ def extractRecFromJson(dataset):
 
     data = json.load(dataset) 
 
-    user = csv.writer(open("users.csv", "wb"))
+    user = csv.writer(open("data/users.csv", "wb"))
     for entry in data.items():
         tline = [ entry[0], (entry[1]['Gender']).lower(), (entry[1]['Employment']).lower(), (entry[1]['Highest Education']).lower(), entry[1]['Last Access Time'], (entry[1]['Location']).lower(), entry[1]['Num Logins'], entry[1]['Year of Birth']  ]
 	#print tline
 	user.writerow(tline)
-
 
     ids = []
     askills = []

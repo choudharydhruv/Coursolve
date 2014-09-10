@@ -12,6 +12,8 @@ import sys
 import networkx as nx
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import csv
+
 
 def get_wiki_category(skill):
     return skill 
@@ -19,6 +21,51 @@ def get_wiki_category(skill):
 def group_skills(skill_dic):
     for sk in skill_dic:
         category_list = get_wiki_category(sk)
+
+def build_users_graph(skills, unique_skills):
+    print "Building graph edges"
+    
+    nodes_csv = open('nodes.csv', 'w')
+    edges_csv = open('edges.csv', 'w')
+    nptr = csv.writer(nodes_csv, delimiter= ',')
+    eptr = csv.writer(edges_csv, delimiter= ',')
+
+    nptr.writerow(['ID', 'Label'])
+    eptr.writerow(['Source', 'Target', 'Type', 'Weight'])
+
+    graph_id = 0
+    graph_id_map = {}
+    for i in range(0, len(skills)):
+        for j in range(i+1, len(skills)):
+	    overlap = 0
+            for a in skills[i]:
+                if a in skills[j]:
+	            overlap += 1.0 
+	    if overlap>0:
+	        overlap = overlap / (len(skills[i]) + len(skills[j]) - overlap)
+	    #print skills[i]
+	    #print skills[j]
+	    #print overlap
+	    if overlap>0.15:
+		src=0
+		dest = 0
+		if i not in graph_id_map:
+		    graph_id +=1
+		    graph_id_map[i] = graph_id
+		    src = graph_id
+	            nptr.writerow([src,src])
+		else:
+		    src = graph_id_map[i]
+		if j not in graph_id_map:
+		    graph_id +=1
+		    graph_id_map[j] = graph_id
+		    dest = graph_id
+	            nptr.writerow([dest,dest])
+		else:
+		    dest = graph_id_map[j]
+	        eptr.writerow([src, dest, 'Undirected', overlap])
+	        print "Calculating skill overlap between users", src,dest,overlap
+		print skills[i],skills[j] 
 
 def build_skills_graph(skills, unique_skills):
 
@@ -29,6 +76,16 @@ def build_skills_graph(skills, unique_skills):
 
     d2_dict = defaultdict(dict)    
 
+    nodes_csv = open('nodes.csv', 'w')
+    edges_csv = open('edges.csv', 'w')
+    nptr = csv.writer(nodes_csv, delimiter= ',')
+    eptr = csv.writer(edges_csv, delimiter= ',')
+
+    nptr.writerow(['ID', 'Label'])
+    eptr.writerow(['Source', 'Target', 'Type', 'Weight'])
+
+    graph_id_map = {}
+    
     for sk in skills:
         for a in range(0,len(sk)):
             for b in range(a+1,len(sk)):
@@ -40,6 +97,7 @@ def build_skills_graph(skills, unique_skills):
 		    except:
 		        d2_dict[sk[a]][sk[b]] = 1.0
 
+    graph_id = 0
     for i in range(1, len(skill_list)):
         for j in range(1,len(skill_list)):
             if i==j:
@@ -47,14 +105,30 @@ def build_skills_graph(skills, unique_skills):
 	    try:
 		common = d2_dict[skill_list[i]][skill_list[j]]
 		union = unique_skills[skill_list[i]] + unique_skills[skill_list[j]] - common
-	        if union > 10 and common > 1:
+	        if union>10 and common>1 and unique_skills[skill_list[j]]>5 and unique_skills[skill_list[i]]>5:
                     jaccard = common/union
 	        else:
 		    jaccard = 0.0
 	        if (jaccard >= 0.1):
 	            G.add_edge(skill_list[i],skill_list[j],weight=jaccard)
-	            #print "Added link between ", skill_list[i], skill_list[j], jaccard, common, union
-		    
+	            print "Added link between ", skill_list[i], skill_list[j], jaccard, common, union
+		    src=0
+		    dest = 0
+		    if i not in graph_id_map:
+			graph_id +=1
+			graph_id_map[i] = graph_id
+			src = graph_id
+	                nptr.writerow([src,(skill_list[i]).encode("utf-8")])
+		    else:
+			src = graph_id_map[i]
+		    if j not in graph_id_map:
+			graph_id +=1
+			graph_id_map[j] = graph_id
+			dest = graph_id
+	                nptr.writerow([dest,(skill_list[j]).encode("utf-8")])
+		    else:
+			dest = graph_id_map[j]
+		    eptr.writerow([src, dest, 'Undirected', jaccard])
             except:
 		continue
 
@@ -267,8 +341,17 @@ def extractRecFromJson(dataset):
                 user.append(s)
         comb_skills.append(user)
 
-    build_skills_graph(comb_skills, unique_askills)
+    tskills = []
+    for i in askills:
+        user = []
+        for s in i: 
+	    if s not in user:
+	        user.append(s)
+        tskills.append(user)
+    askills = tskills
 
+    build_skills_graph(askills, unique_askills)
+    #build_users_graph(askills,unique_askills)
 
     return ids,askills,dskills,gender,location,employment   
 

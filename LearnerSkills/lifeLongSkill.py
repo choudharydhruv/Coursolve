@@ -175,10 +175,25 @@ def build_skills_graph(skills, unique_skills):
     plt.show() # display
 
 
+def build_skill_skill_matrix(user_skills, unique_skills):
+    
+    n = len(unique_skills)
+    ss_matrix = np.zeros(n,n)
 
+    skill_id_map = {}
+    skill_id = 0
+    for sk in unique_skills:
+	skill_id_map[sk] = skill_id
+	skill_id +=1
 
-
-
+    for sk in user_skills:
+        for a in range(0,len(sk)):
+            for b in range(a+1,len(sk)):
+		s1 = skill_id_map[sk[a]]
+	        s2 = skill_id_map[sk[b]]
+		ss_matrix[s1][s2] += 1
+	        ss_matrix[s2][s1] += 1
+                
 def processSkills(skills):
     skillList=[]
     for s in skills:
@@ -335,7 +350,8 @@ def extractRecFromJson(dataset):
     for i,j in zip(askills,dskills):
         user = []    
         for s in i:
-            user.append(s)
+	    if s not in user:
+                user.append(s)
         for s in j:
 	    if s not in user:
                 user.append(s)
@@ -350,8 +366,22 @@ def extractRecFromJson(dataset):
         tskills.append(user)
     askills = tskills
 
-    build_skills_graph(askills, unique_askills)
+    tskills = []
+    for i in dskills:
+        user = []
+        for s in i: 
+	    if s not in user:
+	        user.append(s)
+        tskills.append(user)
+    dskills = tskills
+
+
+    #build_skills_graph(askills, unique_askills)
     #build_users_graph(askills,unique_askills)
+
+    build_skill_skill_matrix(askills, unique_askills)
+    build_user_skill_matrix(askills, unique_askills)
+
 
     return ids,askills,dskills,gender,location,employment   
 

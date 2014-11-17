@@ -25,42 +25,70 @@ class NonNegativeMatrixFactorization(object):
 
     """
 
-    def __init__(self, loss=kl, r) 
+    def __init__(self, loss='kl', r=10, epsilon=1e-6): 
         self.loss =  loss
 	self.r = r
+	self.e = epsilon
 
-    def fit(self,V):
+    def fit(self,V, iterations=200, debug=False):
         self.V = V
-        #Dimensions        
-        self.N = V.shape[0]
-        self.M = V.shape[1]
+	r = self.r
+	eps = self.e
+
+        N,M = V.shape
 
         initValue = V.mean()
- 
-        Winit = np.random.random(N*r).reshape(N, r) * avg_V
-        Hinit = np.random.random(r*M).reshape(r, M) * avg_V        
 
-        W = Winit
-        H = Hinit
+	if debug==True:
+	    print V 
 
-        WdotH = W.dot(H)
-        VbyWH = V / WdotH
+        Winit = np.random.rand(N,r) * initValue
+        Hinit = np.random.rand(r,M) * initValue    
+
+
+        W = np.maximum(Winit, eps)
+        H = np.maximum(Hinit, eps)
+
+        WdotH = W.dot(H) + eps
+        VbyWH = V / WdotH + eps
+
+	if debug==True:
+	    print WdotH
+	    print VbyWH
 
         for i in range(iterations):
             H *= (np.dot(VbyWH.T, W) / W.sum(axis=0)).T
+	    H = np.maximum(H, eps)
 
-            WdotH = W.dot(H)
-            VbyWH = V / WH
+            WdotH = W.dot(H) + eps
+            VbyWH = V / WdotH + eps
             W *= np.dot(VbyWH, H.T) / H.sum(axis=1)
+	    W = np.maximum(W, eps)
 
-            WdotH = W.dot(H)
-            VbyWH = V / WdotH
+            WdotH = W.dot(H) + eps
+            VbyWH = V / WdotH + eps
 
-            divergence = ((V * np.log(V_over_WH)) - V + WH).sum()
-            print("At iteration {i}, the Kullback-Liebler divergence is {d}".format(
-                i=i, d=divergence))
+	    if debug==True and iterations%20 == 0:
+	        print WdotH
+	        print VbyWH
+
+            divergence = ((V * np.log(VbyWH)) - V + WdotH).sum()
+            print("At iteration {i}, the Kullback-Liebler divergence is {d}".format(i=i, d=divergence))
+	    if debug==True and iterations%10 == 0:
+	        print "Reconstructed matrix ", WdotH
         
         self.W = W
         self.H = H
+        return W,H
 
+if __name__=='__main__':
 
+    model = NonNegativeMatrixFactorization('kl', 6)
+
+    V = np.arange(.01,1.01, 0.01).reshape(10,10)   
+
+    W,H = model.fit(V)
+
+    print W,H
+    print 'Original matrix', V
+    print 'factored reconstruction', W.dot(H)

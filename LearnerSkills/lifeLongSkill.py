@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import numpy as np
 import json
 import sys
 import google
@@ -14,6 +15,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import csv
 
+from nmf import NonNegativeMatrixFactorization as nmf
 
 def get_wiki_category(skill):
     return skill 
@@ -175,15 +177,17 @@ def build_skills_graph(skills, unique_skills):
     plt.show() # display
 
 
-def build_skill_skill_matrix(user_skills, unique_skills):
+def recommend_skill_skill_matrix(user_skills, unique_skills):
     
-    n = len(unique_skills)
-    ss_matrix = np.zeros(n,n)
+    n = len(unique_skills.keys())
+    ss_matrix = np.zeros(n*n).reshape(n,n)
 
     skill_id_map = {}
+    skill_name_map = {}
     skill_id = 0
     for sk in unique_skills:
 	skill_id_map[sk] = skill_id
+	skill_name_map[skill_id] = sk
 	skill_id +=1
 
     for sk in user_skills:
@@ -193,7 +197,56 @@ def build_skill_skill_matrix(user_skills, unique_skills):
 	        s2 = skill_id_map[sk[b]]
 		ss_matrix[s1][s2] += 1
 	        ss_matrix[s2][s1] += 1
-                
+
+    print 'Skill-skill matrix shape', ss_matrix.shape
+    model = nmf('kl',10)
+
+    W,H = model.fit(ss_matrix, 200, False)
+
+    ss_matrix_approx = W.dot(H)
+    print "Reconstructed matrix ", ss_matrix_approx
+
+
+    for sk in skill_id_map:
+        sid = skill_id_map[sk]
+        val = ss_matrix_approx[sid,:]
+	print sk.encode("utf-8"), " : "
+	top5_h = []
+	for i in range(5):
+	    max_v = 0
+	    max_j = 0
+	    for j in range(len(val)): 
+		if val[j] > max_v and (j not in top5_h):
+		    max_v = val[j]
+   		    max_j = j
+	    top5_h.append(max_j)
+
+        val = ss_matrix_approx[:,sid].T
+	top5_v = []
+	for i in range(5):
+	    max_v = 0
+	    max_j = 0
+	    for j in range(len(val)): 
+		if val[j] > max_v and (j not in top5_v):
+		    max_v = val[j]
+   		    max_j = j
+	    top5_v.append(max_j)
+
+        val = ss_matrix[sid,:]
+	top5_o = []
+	for i in range(5):
+	    max_v = 0
+	    max_j = 0
+	    for j in range(len(val)): 
+		if val[j] > max_v and (j not in top5_o):
+		    max_v = val[j]
+   		    max_j = j
+	    top5_o.append(max_j)
+
+	for t1, t2, t3 in zip(top5_o,top5_h,top5_v):
+	    print "    ", skill_name_map[t1].encode("utf-8"), "   \t", skill_name_map[t2].encode("utf-8")
+
+
 def processSkills(skills):
     skillList=[]
     for s in skills:
@@ -364,6 +417,7 @@ def extractRecFromJson(dataset):
 	    if s not in user:
 	        user.append(s)
         tskills.append(user)
+	print "user: ", user
     askills = tskills
 
     tskills = []
@@ -379,8 +433,8 @@ def extractRecFromJson(dataset):
     #build_skills_graph(askills, unique_askills)
     #build_users_graph(askills,unique_askills)
 
-    build_skill_skill_matrix(askills, unique_askills)
-    build_user_skill_matrix(askills, unique_askills)
+    recommend_skill_skill_matrix(askills, unique_askills)
+    #recommend_user_skill_matrix(askills, unique_askills)
 
 
     return ids,askills,dskills,gender,location,employment   

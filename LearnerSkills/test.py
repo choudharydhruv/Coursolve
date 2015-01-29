@@ -18,6 +18,12 @@ import scipy.cluster.vq as vq
 cent, label = vq.kmeans2(X,k)
 
 
+#Adding column of 1s
+a = np.random.rand((5,5))
+b = np.ones((5,6))
+b[:,1:] = a
+
+print a,b
 
 X = np.random.randint(0,9,size=(10))
 Y = np.random.randint(0,9,size=(10))
